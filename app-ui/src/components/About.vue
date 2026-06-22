@@ -1,15 +1,17 @@
 <template>
   <div>
-    <div class="text-h5"><a target="_blank" href="https://sbs20.github.io/scanservjs/">{{ $t('global.application-name') }}</a></div>
+    <div class="text-h5">scanservjs-plus</div>
     <div class="text-caption">v{{ version }}</div>
-    <div class="text-caption mb-4">&copy; 2016 - {{ new Date().getFullYear() }} Sam Strachan</div>
+    <div class="text-caption mb-4">
+      Fork of <a target="_blank" href="https://github.com/sbs20/scanservjs">scanservjs</a> by Sam Strachan &mdash; additional features by <a target="_blank" href="https://github.com/tinkermesomething">tinkermesomething</a>
+    </div>
     <div class="text-body-1 mb-4">
       {{ $t('about.main') }}
     </div>
 
     <div class="text-body-1 mb-4">
       {{ $t('about.issue') }}
-      <a target="_blank" href="https://github.com/sbs20/scanservjs">https://github.com/sbs20/scanservjs</a>
+      <a target="_blank" href="https://github.com/tinkermesomething/scanservjs-plus">https://github.com/tinkermesomething/scanservjs-plus</a>
     </div>
 
     <div class="text-body-1 mb-4">

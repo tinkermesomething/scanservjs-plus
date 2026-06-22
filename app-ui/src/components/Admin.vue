@@ -59,6 +59,8 @@ import auth from '../classes/auth';
 export default {
   name: 'Admin',
 
+  emits: ['notify'],
+
   data() {
     return {
       users: [],
@@ -112,21 +114,29 @@ export default {
     },
 
     async saveEdit() {
-      await Common.fetch(`/api/v1/admin/users/${encodeURIComponent(this.editTarget.id)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ outputDirectory: this.editDirectory }),
-      });
-      this.editDialog = false;
-      await this.loadData();
+      try {
+        await Common.fetch(`/api/v1/admin/users/${encodeURIComponent(this.editTarget.id)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ outputDirectory: this.editDirectory }),
+        });
+        this.editDialog = false;
+        await this.loadData();
+      } catch (e) {
+        this.$emit('notify', { type: 'e', message: e });
+      }
     },
 
     async removeUser(user) {
       if (!confirm(this.$t('admin.confirm-remove'))) return;
-      await Common.fetch(`/api/v1/admin/users/${encodeURIComponent(user.id)}`, {
-        method: 'DELETE',
-      });
-      await this.loadData();
+      try {
+        await Common.fetch(`/api/v1/admin/users/${encodeURIComponent(user.id)}`, {
+          method: 'DELETE',
+        });
+        await this.loadData();
+      } catch (e) {
+        this.$emit('notify', { type: 'e', message: e });
+      }
     },
   },
 };

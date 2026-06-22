@@ -67,7 +67,9 @@ class OidcAuth {
       req.session.oidcState = state;
       req.session.oidcNonce = nonce;
       req.session.oidcCodeVerifier = codeVerifier;
-      req.session.returnTo = req.query.returnTo || '/';
+      // Only accept same-origin paths — reject absolute URLs (open redirect)
+      const returnTo = req.query.returnTo || '/';
+      req.session.returnTo = returnTo.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '/';
 
       const url = this.client.authorizationUrl({
         scope: this.config.oidc.scope,

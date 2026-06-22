@@ -73,7 +73,26 @@
     "files": "Files",
     "settings": "Settings",
     "about": "About",
+    "admin": "Admin",
+    "login": "Login",
+    "logout": "Logout",
     "version": "Version"
+  },
+
+  "admin": {
+    "title": "Admin",
+    "name": "Name",
+    "email": "Email",
+    "output-directory": "Output directory",
+    "last-login": "Last login",
+    "actions": "Actions",
+    "edit": "Edit",
+    "remove": "Remove",
+    "save": "Save",
+    "cancel": "Cancel",
+    "none-ephemeral": "None — auto download",
+    "confirm-remove": "Remove this user's record?",
+    "no-users": "No users have logged in yet"
   },
 
   "batch-mode": {
@@ -162,6 +181,7 @@
     "btn-preview": "Preview",
     "btn-clear": "Clear",
     "btn-scan": "Scan",
+    "btn-quick-scan": "Quick Scan",
     "top": "Top",
     "left": "Left",
     "width": "Width",

@@ -665,10 +665,12 @@ export default {
 
     async saveServerScanParams(request) {
       try {
+        // eslint-disable-next-line no-unused-vars
+        const { index: _index, ...params } = request;
         await Common.fetch('/api/v1/user/scan-params', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(request),
+          body: JSON.stringify(params),
         });
       } catch { /* not critical — local state is still correct */ }
     },
