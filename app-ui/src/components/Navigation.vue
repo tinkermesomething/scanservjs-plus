@@ -9,6 +9,7 @@
         <v-btn class="transparent" elevation="0" @click="go('/files')"><v-icon class="mr-2" :icon="mdiFileDocumentMultiple" />{{ $t('navigation.files') }}</v-btn>
         <v-btn class="transparent" elevation="0" @click="go('/settings')"><v-icon class="mr-2" :icon="mdiCog" />{{ $t('navigation.settings') }}</v-btn>
         <v-btn class="transparent" elevation="0" @click="go('/about')"><v-icon class="mr-2" :icon="mdiInformation" />{{ $t('navigation.about') }}</v-btn>
+        <v-btn v-if="auth.user && auth.user.isAdmin" class="transparent" elevation="0" @click="go('/admin')"><v-icon class="mr-2" :icon="mdiShieldAccount" />{{ $t('navigation.admin') }}</v-btn>
       </v-toolbar-items>
     </v-app-bar>
 
@@ -38,6 +39,12 @@
           </template>
         </v-list-item>
 
+        <v-list-item v-if="auth.user && auth.user.isAdmin" :title="$t('navigation.admin')" @click="go('/admin')">
+          <template #prepend>
+            <v-icon :icon="mdiShieldAccount" />
+          </template>
+        </v-list-item>
+
         <v-divider />
 
         <v-list-item>
@@ -61,7 +68,8 @@
 
 <script>
 import Constants from '../classes/constants';
-import { mdiCamera, mdiCog, mdiFileDocumentMultiple, mdiInformation, mdiTools } from '@mdi/js';
+import auth from '../classes/auth';
+import { mdiCamera, mdiCog, mdiFileDocumentMultiple, mdiInformation, mdiShieldAccount, mdiTools } from '@mdi/js';
 export default {
   name: 'Navigation',
 
@@ -74,10 +82,12 @@ export default {
 
   setup() {
     return {
+      auth,
       mdiCamera,
       mdiCog,
       mdiFileDocumentMultiple,
       mdiInformation,
+      mdiShieldAccount,
       mdiTools
     };
   },

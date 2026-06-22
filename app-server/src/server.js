@@ -27,7 +27,8 @@ async function start() {
     .scanEndpoint(scanLock)
     .ephemeralEndpoint()
     .endpoints()
-    .userEndpoints(oidcAuth, userStore);
+    .userEndpoints(oidcAuth, userStore)
+    .adminEndpoints(oidcAuth, userStore);
 
   const server = app.listen(config.port, config.host, () => {
     const log = require('loglevel').getLogger('server');

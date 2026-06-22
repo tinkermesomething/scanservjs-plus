@@ -28,6 +28,7 @@ import Constants from './classes/constants';
 import ManifestBuilder from './classes/manifest-builder';
 import Storage from './classes/storage';
 import Navigation from './components/Navigation.vue';
+import { loadAuth } from './classes/auth';
 import { useTheme } from 'vuetify';
 
 const storage = Storage.instance();
@@ -77,8 +78,10 @@ export default {
   },
 
   mounted() {
-    this.$vuetify.rtl = Constants.RtlLocales.includes(storage.settings.locale);    
+    this.$vuetify.rtl = Constants.RtlLocales.includes(storage.settings.locale);
     this.$i18n.locale = storage.settings.locale;
+
+    loadAuth();
 
     // Default route if connected
     if (this.$route.matched.length === 0) {

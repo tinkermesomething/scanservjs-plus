@@ -11,6 +11,7 @@ import 'vue-toastr/dist/style.css';
 
 import Constants from './classes/constants';
 import App from './App.vue';
+import Admin from './components/Admin.vue';
 import Files from './components/Files.vue';
 import Scan from './components/Scan.vue';
 import Settings from './components/Settings.vue';
@@ -75,6 +76,7 @@ const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     { path: '/about', component: About },
+    { path: '/admin', component: Admin },
     { path: '/files', component: Files },
     { path: '/settings', component: Settings },
     { path: '/scan', component: Scan },

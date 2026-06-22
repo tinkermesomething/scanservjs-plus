@@ -43,8 +43,8 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/scanservjs
-            ghcr.io/${{ github.repository_owner }}/scanservjs
+            ${{ secrets.DOCKERHUB_USERNAME }}/scanservjs-plus
+            ghcr.io/${{ github.repository_owner }}/scanservjs-plus
           tags: |
             type=schedule,pattern=staging
             type=semver,pattern={{raw}}

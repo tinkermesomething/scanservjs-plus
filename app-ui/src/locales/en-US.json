@@ -72,7 +72,24 @@
     "files": "Files",
     "settings": "Settings",
     "about": "About",
+    "admin": "Admin",
     "version": "Version"
+  },
+
+  "admin": {
+    "title": "Admin",
+    "name": "Name",
+    "email": "Email",
+    "output-directory": "Output directory",
+    "last-login": "Last login",
+    "actions": "Actions",
+    "edit": "Edit",
+    "remove": "Remove",
+    "save": "Save",
+    "cancel": "Cancel",
+    "none-ephemeral": "None — auto download",
+    "confirm-remove": "Remove this user's record?",
+    "no-users": "No users have logged in yet"
   },
 
   "batch-mode": {

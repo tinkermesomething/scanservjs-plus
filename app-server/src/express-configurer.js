@@ -517,6 +517,52 @@ module.exports = class ExpressConfigurer {
   }
 
   /**
+   * Admin endpoints: user list, directory assignment, user removal.
+   * All routes require admin group membership (checked via OIDC groups claim).
+   * @param {import('./classes/oidc-auth')} oidcAuth
+   * @param {import('./classes/user-store')} userStore
+   * @returns {ExpressConfigurer}
+   */
+  adminEndpoints(oidcAuth, userStore) {
+    if (!config.oidc.enabled) return this;
+
+    const adminGuard = (req, res, next) => {
+      if (!req.user || !oidcAuth.isAdmin(req.user)) {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      next();
+    };
+
+    this.app.get('/api/v1/admin/users', adminGuard, (_req, res) => {
+      res.json(userStore.list());
+    });
+
+    this.app.put('/api/v1/admin/users/:id', adminGuard, (req, res) => {
+      const { outputDirectory } = req.body;
+      if (outputDirectory) {
+        const allowed = config.outputDirectories.map(d => d.path);
+        if (!allowed.includes(outputDirectory)) {
+          return res.status(400).json({ message: 'Directory not permitted' });
+        }
+      }
+      const updated = userStore.upsert(req.params.id, { outputDirectory: outputDirectory || null });
+      res.json(updated);
+    });
+
+    this.app.delete('/api/v1/admin/users/:id', adminGuard, (req, res) => {
+      const deleted = userStore.delete(req.params.id);
+      if (!deleted) return res.status(404).json({ message: 'User not found' });
+      res.json({ ok: true });
+    });
+
+    this.app.get('/api/v1/admin/directories', adminGuard, (_req, res) => {
+      res.json(config.outputDirectories);
+    });
+
+    return this;
+  }
+
+  /**
    * Configures express
    * @param {import('express').Express} app
    */

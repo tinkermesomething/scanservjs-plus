@@ -1,15 +1,28 @@
-# scanservjs
+# scanservjs-plus
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/sbs20/scanservjs/build.yml?branch=master&style=for-the-badge)](https://github.com/sbs20/scanservjs/actions)
-[![Code QL Status](https://img.shields.io/github/actions/workflow/status/sbs20/scanservjs/codeql-analysis.yml?branch=master&style=for-the-badge&label=CodeQL)](https://github.com/sbs20/scanservjs/actions)
-[![Docker Image Size (latest by date)](https://img.shields.io/docker/image-size/sbs20/scanservjs?style=for-the-badge)](https://hub.docker.com/r/sbs20/scanservjs)
-[![Docker Pulls](https://img.shields.io/docker/pulls/sbs20/scanservjs?style=for-the-badge)](https://hub.docker.com/r/sbs20/scanservjs)
-[![GitHub stars](https://img.shields.io/github/stars/sbs20/scanservjs?label=Github%20stars&style=for-the-badge)](https://github.com/sbs20/scanservjs)
+> **Independent fork** of [sbs20/scanservjs](https://github.com/sbs20/scanservjs).
+> This fork adds features I needed for my homelab that are outside the scope of the upstream project.
+> All credit for the original scanner UI goes to [Sam Strachan](https://github.com/sbs20) and contributors.
+
+## Added in this fork
+
+- **OIDC authentication** (Pocket-ID / any OpenID Connect provider) — env-configured, agnostic to provider
+- **Per-user persistent settings** stored server-side — settings follow you across devices
+- **Session-scoped ephemeral downloads** — guest scans and unassigned-user scans auto-download and are deleted after the session ends
+- **Admin panel** — manage user→directory assignments via OIDC groups; no hardcoded user lists
+- **Scan lock** — single-scanner concurrency; same session can batch without blocking itself; 5-min auto-release on abandoned scans
+
+## Configuration
+
+All OIDC and session config is via environment variables (`.env`). See `docker-compose.yml` for the full list.
+
+---
+
 [![GitHub](https://img.shields.io/github/license/sbs20/scanservjs?style=for-the-badge)](https://github.com/sbs20/scanservjs/blob/master/LICENSE.md)
 
 ![screenshot](https://github.com/sbs20/scanservjs/raw/master/docs/screen0.jpg)
 
-Copyright 2016-2026 [Sam Strachan](https://github.com/sbs20)
+Original copyright 2016-2026 [Sam Strachan](https://github.com/sbs20)
 
 ## What people are saying
 
