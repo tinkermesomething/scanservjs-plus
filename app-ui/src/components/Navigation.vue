@@ -10,6 +10,11 @@
         <v-btn class="transparent" elevation="0" @click="go('/settings')"><v-icon class="mr-2" :icon="mdiCog" />{{ $t('navigation.settings') }}</v-btn>
         <v-btn class="transparent" elevation="0" @click="go('/about')"><v-icon class="mr-2" :icon="mdiInformation" />{{ $t('navigation.about') }}</v-btn>
         <v-btn v-if="auth.user && auth.user.isAdmin" class="transparent" elevation="0" @click="go('/admin')"><v-icon class="mr-2" :icon="mdiShieldAccount" />{{ $t('navigation.admin') }}</v-btn>
+        <template v-if="auth.oidcEnabled && !auth.loading">
+          <span v-if="auth.user" class="text-caption d-flex align-center mr-2">{{ auth.user.name }}</span>
+          <v-btn v-if="auth.user" class="transparent" elevation="0" :href="'/auth/logout'"><v-icon class="mr-2" :icon="mdiLogout" />{{ $t('navigation.logout') }}</v-btn>
+          <v-btn v-else class="transparent" elevation="0" :href="'/auth/login?returnTo=/'"><v-icon class="mr-2" :icon="mdiLogin" />{{ $t('navigation.login') }}</v-btn>
+        </template>
       </v-toolbar-items>
     </v-app-bar>
 
@@ -45,6 +50,19 @@
           </template>
         </v-list-item>
 
+        <template v-if="auth.oidcEnabled && !auth.loading">
+          <v-list-item v-if="auth.user" :title="$t('navigation.logout')" :href="'/auth/logout'">
+            <template #prepend>
+              <v-icon :icon="mdiLogout" />
+            </template>
+          </v-list-item>
+          <v-list-item v-else :title="$t('navigation.login')" :href="'/auth/login?returnTo=/'">
+            <template #prepend>
+              <v-icon :icon="mdiLogin" />
+            </template>
+          </v-list-item>
+        </template>
+
         <v-divider />
 
         <v-list-item>
@@ -69,7 +87,7 @@
 <script>
 import Constants from '../classes/constants';
 import auth from '../classes/auth';
-import { mdiCamera, mdiCog, mdiFileDocumentMultiple, mdiInformation, mdiShieldAccount, mdiTools } from '@mdi/js';
+import { mdiCamera, mdiCog, mdiFileDocumentMultiple, mdiInformation, mdiLogin, mdiLogout, mdiShieldAccount, mdiTools } from '@mdi/js';
 export default {
   name: 'Navigation',
 
@@ -87,6 +105,8 @@ export default {
       mdiCog,
       mdiFileDocumentMultiple,
       mdiInformation,
+      mdiLogin,
+      mdiLogout,
       mdiShieldAccount,
       mdiTools
     };

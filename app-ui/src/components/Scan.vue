@@ -142,6 +142,7 @@ import Common from '../classes/common';
 import Device from '../classes/device';
 import Request from '../classes/request';
 import Storage from '../classes/storage';
+import auth from '../classes/auth';
 
 import 'vue-advanced-cropper/dist/style.css';
 
@@ -170,6 +171,7 @@ export default {
   setup() {
     const { te } = useI18n();
     return {
+      auth,
       mdiCamera,
       mdiDelete,
       mdiFlash,
@@ -313,8 +315,17 @@ export default {
     request: {
       handler(request) {
         storage.request = request;
+        if (!auth.isGuest && !this._loadingFromServer) {
+          clearTimeout(this._syncTimer);
+          this._syncTimer = setTimeout(() => this.saveServerScanParams(request), 1000);
+        }
       },
       deep: true
+    },
+    'auth.loading': function(loading) {
+      if (!loading && !auth.isGuest) {
+        this.loadServerScanParams();
+      }
     }
   },
 
@@ -566,7 +577,13 @@ export default {
           'Content-Type': 'application/json'
         }
       }).then((response) => {
-        if (response && 'index' in response) {
+        if (!response) return;
+        if (response.ephemeral) {
+          this._triggerEphemeralDownload(response.token, response.filename);
+          this.readPreview();
+          return;
+        }
+        if ('index' in response) {
           const options = {
             message: this.$t('scan.message:turn-documents'),
             onFinish: () => {
@@ -590,7 +607,6 @@ export default {
           }
           this.$refs.batchDialog.open(options);
         } else {
-          // Finish
           if (storage.settings.showFilesAfterScan) {
             this.$router.push('/files');
           } else {
@@ -613,12 +629,48 @@ export default {
         }
       }).then((response) => {
         if (!response) return;
+        if (response.ephemeral) {
+          this._triggerEphemeralDownload(response.token, response.filename);
+          this.readPreview();
+          return;
+        }
         if (storage.settings.showFilesAfterScan) {
           this.$router.push('/files');
         } else {
           this.readPreview();
         }
       });
+    },
+
+    _triggerEphemeralDownload(token, filename) {
+      const a = document.createElement('a');
+      a.href = `/api/v1/ephemeral/${encodeURIComponent(token)}`;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    },
+
+    async loadServerScanParams() {
+      try {
+        const params = await Common.fetch('/api/v1/user/scan-params');
+        if (params && Object.keys(params).length > 0) {
+          this._loadingFromServer = true;
+          this.request = Request.create(params, this.device);
+          await this.$nextTick();
+          this._loadingFromServer = false;
+        }
+      } catch { /* not critical — fall back to current form state */ }
+    },
+
+    async saveServerScanParams(request) {
+      try {
+        await Common.fetch('/api/v1/user/scan-params', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(request),
+        });
+      } catch { /* not critical — local state is still correct */ }
     },
 
     updatePaperSize(value) {

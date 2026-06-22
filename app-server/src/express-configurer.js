@@ -302,6 +302,20 @@ module.exports = class ExpressConfigurer {
       res.json({ ok: true });
     });
 
+    // Get logged-in user's stored scan params
+    this.app.get('/api/v1/user/scan-params', (req, res) => {
+      if (!req.user) return res.status(401).json({ message: 'Not authenticated' });
+      const record = userStore.get(req.user.id) || {};
+      res.json(record.scanParams || {});
+    });
+
+    // Store logged-in user's scan params (no server-side validation — user's own settings)
+    this.app.put('/api/v1/user/scan-params', (req, res) => {
+      if (!req.user) return res.status(401).json({ message: 'Not authenticated' });
+      userStore.upsert(req.user.id, { scanParams: req.body });
+      res.json({ ok: true });
+    });
+
     return this;
   }
 

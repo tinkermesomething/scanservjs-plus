@@ -73,6 +73,8 @@
     "settings": "Settings",
     "about": "About",
     "admin": "Admin",
+    "login": "Login",
+    "logout": "Logout",
     "version": "Version"
   },
 
