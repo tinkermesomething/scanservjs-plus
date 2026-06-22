@@ -31,10 +31,13 @@
     "cors": "2.8.6",
     "express": "4.18.2",
     "express-basic-auth": "1.2.1",
+    "express-session": "1.17.3",
     "loglevel": "1.8.1",
     "loglevel-plugin-prefix": "0.8.4",
     "mv": "2.1.1",
+    "openid-client": "4.9.1",
     "semver": "7.5.4",
+    "session-file-store": "1.5.0",
     "swagger-jsdoc": "6.2.8",
     "swagger-ui-express": "5.0.0"
   },

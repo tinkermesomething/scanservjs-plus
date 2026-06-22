@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const basicAuth = require('express-basic-auth');
+const session = require('express-session');
 const fs = require('fs');
 const path = require('path');
 const rootLog = require('loglevel');
@@ -177,10 +178,115 @@ module.exports = class ExpressConfigurer {
   }
 
   /**
-   * Configures basic authentication
+   * Configures session middleware (required for OIDC)
+   * @returns {ExpressConfigurer}
+   */
+  session() {
+    const FileStore = require('session-file-store')(session);
+    fs.mkdirSync(config.sessionsDirectory, { recursive: true });
+
+    this.app.use(session({
+      store: new FileStore({
+        path: config.sessionsDirectory,
+        ttl: config.session.maxAge / 1000,
+        reapInterval: 3600,
+        logFn: () => {},
+      }),
+      secret: config.session.secret,
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        secure: config.session.secure,
+        sameSite: 'lax',
+        maxAge: config.session.maxAge,
+        httpOnly: true,
+      },
+    }));
+    return this;
+  }
+
+  /**
+   * Installs OIDC middleware that populates req.user from session
+   * @param {import('./classes/oidc-auth')} oidcAuth
+   * @returns {ExpressConfigurer}
+   */
+  oidcMiddleware(oidcAuth) {
+    this.app.use(oidcAuth.middleware());
+    this._oidcAuth = oidcAuth;
+    return this;
+  }
+
+  /**
+   * Registers /auth/* routes (must be before basicAuth)
+   * @param {import('./classes/oidc-auth')} oidcAuth
+   * @param {import('./classes/user-store')} userStore
+   * @returns {ExpressConfigurer}
+   */
+  authRoutes(oidcAuth, userStore) {
+    if (!config.oidc.enabled) return this;
+    this.app.get('/auth/login', oidcAuth.loginHandler());
+    this.app.get('/auth/callback', oidcAuth.callbackHandler(userStore));
+    this.app.get('/auth/logout', oidcAuth.logoutHandler());
+    return this;
+  }
+
+  /**
+   * Registers /api/v1/user/* endpoints
+   * @param {import('./classes/oidc-auth')} oidcAuth
+   * @param {import('./classes/user-store')} userStore
+   * @returns {ExpressConfigurer}
+   */
+  userEndpoints(oidcAuth, userStore) {
+    // Who am I?
+    this.app.get('/api/v1/user/me', (req, res) => {
+      res.json({
+        isGuest: !req.user,
+        oidcEnabled: config.oidc.enabled,
+        user: req.user ? {
+          id: req.user.id,
+          name: req.user.name,
+          email: req.user.email,
+          isAdmin: oidcAuth.isAdmin(req.user),
+        } : null,
+      });
+    });
+
+    // Get logged-in user's stored settings
+    this.app.get('/api/v1/user/settings', (req, res) => {
+      if (!req.user) return res.status(401).json({ message: 'Not authenticated' });
+      const record = userStore.get(req.user.id) || {};
+      res.json({
+        outputDirectory: record.outputDirectory || null,
+      });
+    });
+
+    // Update logged-in user's settings
+    this.app.put('/api/v1/user/settings', (req, res) => {
+      if (!req.user) return res.status(401).json({ message: 'Not authenticated' });
+
+      const { outputDirectory } = req.body;
+
+      // Validate the requested directory is in the configured allowlist
+      if (outputDirectory !== null && outputDirectory !== undefined) {
+        const allowed = config.outputDirectories.map(d => d.path);
+        if (!allowed.includes(outputDirectory)) {
+          return res.status(400).json({ message: 'Directory not permitted' });
+        }
+      }
+
+      userStore.upsert(req.user.id, { outputDirectory: outputDirectory || null });
+      res.json({ ok: true });
+    });
+
+    return this;
+  }
+
+  /**
+   * Configures basic authentication (skipped when OIDC is enabled)
    * @returns {ExpressConfigurer}
    */
   basicAuth() {
+    if (config.oidc.enabled) return this;
     if (Object.keys(config.users).length > 0) {
       this.app.use(basicAuth({
         users: config.users,

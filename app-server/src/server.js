@@ -2,19 +2,38 @@
 const express = require('express');
 const application = require('./application');
 const config = application.config();
-const app = express();
+const OidcAuth = require('./classes/oidc-auth');
+const UserStore = require('./classes/user-store');
 const ExpressConfigurer = require('./express-configurer');
 
-ExpressConfigurer.with(app)
-  .encoding()
-  .statics()
-  .basicAuth()
-  .swagger()
-  .endpoints();
+async function start() {
+  const oidcAuth = new OidcAuth(config);
+  const userStore = new UserStore(config.usersDirectory);
 
-const server = app.listen(config.port, config.host, () => {
-  const log = require('loglevel').getLogger('server');
-  log.info(`scanservjs started listening: https://${config.host}:${config.port}`);
+  await oidcAuth.init();
+
+  const app = express();
+
+  ExpressConfigurer.with(app)
+    .encoding()
+    .session()
+    .oidcMiddleware(oidcAuth)
+    .statics()
+    .authRoutes(oidcAuth, userStore)
+    .basicAuth()
+    .swagger()
+    .endpoints()
+    .userEndpoints(oidcAuth, userStore);
+
+  const server = app.listen(config.port, config.host, () => {
+    const log = require('loglevel').getLogger('server');
+    log.info(`scanservjs started listening on ${config.host}:${config.port}`);
+  });
+
+  server.setTimeout(config.timeout);
+}
+
+start().catch(err => {
+  console.error('Failed to start server:', err.message);
+  process.exit(1);
 });
-
-server.setTimeout(config.timeout);

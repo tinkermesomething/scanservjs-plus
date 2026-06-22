@@ -54,8 +54,30 @@ module.exports = class Config {
       thumbnailDirectory: path.join(BASE_PATH, 'data/thumbnail'),
       previewDirectory: path.join(BASE_PATH, 'data/preview'),
       tempDirectory: path.join(BASE_PATH, 'data/temp'),
+      usersDirectory: path.join(BASE_PATH, 'data/users'),
+      sessionsDirectory: path.join(BASE_PATH, 'data/sessions'),
 
       users: {},
+
+      outputDirectories: [],
+
+      oidc: {
+        enabled: false,
+        issuer: '',
+        clientId: '',
+        clientSecret: '',
+        redirectUri: '',
+        scope: 'openid profile email groups',
+        groupsClaim: 'groups',
+        adminGroup: '',
+        postLogoutRedirectUri: '',
+      },
+
+      session: {
+        secret: 'changeme-set-SESSION_SECRET',
+        secure: true,
+        maxAge: 24 * 60 * 60 * 1000,
+      },
 
       previewResolution: 100,
       previewPipeline: {
@@ -271,6 +293,43 @@ module.exports = class Config {
     // Override the OCR language here
     if (process.env.OCR_LANG !== undefined && process.env.OCR_LANG.length > 0) {
       this.ocrLanguage = process.env.OCR_LANG;
+    }
+
+    // OIDC configuration
+    if (process.env.OIDC_ENABLED !== undefined) {
+      this.oidc.enabled = process.env.OIDC_ENABLED === 'true';
+    }
+    if (process.env.OIDC_ISSUER) this.oidc.issuer = process.env.OIDC_ISSUER;
+    if (process.env.OIDC_CLIENT_ID) this.oidc.clientId = process.env.OIDC_CLIENT_ID;
+    if (process.env.OIDC_CLIENT_SECRET) this.oidc.clientSecret = process.env.OIDC_CLIENT_SECRET;
+    if (process.env.OIDC_REDIRECT_URI) this.oidc.redirectUri = process.env.OIDC_REDIRECT_URI;
+    if (process.env.OIDC_SCOPE) this.oidc.scope = process.env.OIDC_SCOPE;
+    if (process.env.OIDC_GROUPS_CLAIM) this.oidc.groupsClaim = process.env.OIDC_GROUPS_CLAIM;
+    if (process.env.ADMIN_GROUP) this.oidc.adminGroup = process.env.ADMIN_GROUP;
+    if (process.env.OIDC_POST_LOGOUT_REDIRECT_URI) {
+      this.oidc.postLogoutRedirectUri = process.env.OIDC_POST_LOGOUT_REDIRECT_URI;
+    }
+
+    // Session configuration
+    if (process.env.SESSION_SECRET) this.session.secret = process.env.SESSION_SECRET;
+    if (process.env.SESSION_SECURE !== undefined) {
+      this.session.secure = process.env.SESSION_SECURE !== 'false';
+    }
+
+    // Output directories: "Label|/path;Label2|/path2"
+    if (process.env.OUTPUT_DIRECTORIES) {
+      this.outputDirectories = process.env.OUTPUT_DIRECTORIES
+        .split(';')
+        .map(e => e.trim())
+        .filter(e => e.includes('|'))
+        .map(entry => {
+          const sep = entry.indexOf('|');
+          return {
+            name: entry.slice(0, sep).trim(),
+            path: entry.slice(sep + 1).trim(),
+          };
+        })
+        .filter(e => e.name && e.path);
     }
   }
 };
