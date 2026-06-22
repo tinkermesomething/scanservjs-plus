@@ -12,6 +12,10 @@ on:
       - 'docs/**'
       - '**/*.md'
 
+permissions:
+  contents: read
+  packages: write   # push to ghcr.io
+
 env:
   BUILD_TARGET: scanservjs-core
   BUILD_PLATFORMS: linux/amd64,linux/arm64,linux/arm/v7
