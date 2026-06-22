@@ -14,8 +14,11 @@ function withEnv(vars, fn) {
     fn();
   } finally {
     for (const [k, v] of Object.entries(saved)) {
-      if (v === undefined) { delete process.env[k]; }
-      else { process.env[k] = v; }
+      if (v === undefined) {
+        delete process.env[k];
+      } else {
+        process.env[k] = v;
+      }
     }
   }
 }

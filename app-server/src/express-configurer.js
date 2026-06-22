@@ -65,7 +65,9 @@ function formatForLog(req) {
  * @returns {string|null}
  */
 function resolveDir(req) {
-  if (!config.oidc.enabled) return config.outputDirectory;
+  if (!config.oidc.enabled) {
+    return config.outputDirectory;
+  }
   return (req.userRecord && req.userRecord.outputDirectory) || null;
 }
 
@@ -91,7 +93,9 @@ const EndpointSpecs = [
     path: '/api/v1/files',
     callback: async (req, res) => {
       const dir = resolveDir(req);
-      if (!dir) return res.send([]);
+      if (!dir) {
+        return res.send([]);
+      }
       res.send(await api.fileList(dir));
     }
   },
@@ -100,7 +104,9 @@ const EndpointSpecs = [
     path: /\/api\/v1\/files\/([^/]+)\/actions\/([^/]+)/,
     callback: async (req, res) => {
       const dir = resolveDir(req);
-      if (!dir) return res.status(403).json({ message: 'No output directory assigned' });
+      if (!dir) {
+        return res.status(403).json({ message: 'No output directory assigned' });
+      }
       const fileName = req.params[0];
       const actionName = req.params[1];
       await api.fileAction(actionName, fileName, dir);
@@ -122,7 +128,9 @@ const EndpointSpecs = [
     path: /\/api\/v1\/files\/([^/]+)/,
     callback: async (req, res) => {
       const dir = resolveDir(req);
-      if (!dir) return res.status(403).json({ message: 'No output directory assigned' });
+      if (!dir) {
+        return res.status(403).json({ message: 'No output directory assigned' });
+      }
       const name = req.params[0];
       const file = FileInfo.unsafe(dir, name);
       res.download(file.fullname);
@@ -133,7 +141,9 @@ const EndpointSpecs = [
     path: '/api/v1/files/*',
     callback: async (req, res) => {
       const dir = resolveDir(req);
-      if (!dir) return res.status(403).json({ message: 'No output directory assigned' });
+      if (!dir) {
+        return res.status(403).json({ message: 'No output directory assigned' });
+      }
       res.send(api.fileDelete(req.params[0], dir));
     }
   },
@@ -142,7 +152,9 @@ const EndpointSpecs = [
     path: '/api/v1/files/*',
     callback: async (req, res) => {
       const dir = resolveDir(req);
-      if (!dir) return res.status(403).json({ message: 'No output directory assigned' });
+      if (!dir) {
+        return res.status(403).json({ message: 'No output directory assigned' });
+      }
       const name = req.params[0];
       const newName = req.body.newName;
       await FileInfo.unsafe(dir, name).rename(newName);
@@ -188,7 +200,7 @@ module.exports = class ExpressConfigurer {
   constructor(app) {
     this.app = app;
     this.app.use(cors());
-    
+
     try {
       fs.mkdirSync(config.outputDirectory, { recursive: true });
       fs.mkdirSync(config.thumbnailDirectory, { recursive: true });
@@ -247,7 +259,9 @@ module.exports = class ExpressConfigurer {
    * @returns {ExpressConfigurer}
    */
   authRoutes(oidcAuth, userStore) {
-    if (!config.oidc.enabled) return this;
+    if (!config.oidc.enabled) {
+      return this;
+    }
     this.app.get('/auth/login', oidcAuth.loginHandler());
     this.app.get('/auth/callback', oidcAuth.callbackHandler(userStore));
     this.app.get('/auth/logout', oidcAuth.logoutHandler());
@@ -277,7 +291,9 @@ module.exports = class ExpressConfigurer {
 
     // Get logged-in user's stored settings
     this.app.get('/api/v1/user/settings', (req, res) => {
-      if (!req.user) return res.status(401).json({ message: 'Not authenticated' });
+      if (!req.user) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
       const record = userStore.get(req.user.id) || {};
       res.json({
         outputDirectory: record.outputDirectory || null,
@@ -286,7 +302,9 @@ module.exports = class ExpressConfigurer {
 
     // Update logged-in user's settings
     this.app.put('/api/v1/user/settings', (req, res) => {
-      if (!req.user) return res.status(401).json({ message: 'Not authenticated' });
+      if (!req.user) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
 
       const { outputDirectory } = req.body;
 
@@ -304,14 +322,18 @@ module.exports = class ExpressConfigurer {
 
     // Get logged-in user's stored scan params
     this.app.get('/api/v1/user/scan-params', (req, res) => {
-      if (!req.user) return res.status(401).json({ message: 'Not authenticated' });
+      if (!req.user) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
       const record = userStore.get(req.user.id) || {};
       res.json(record.scanParams || {});
     });
 
     // Store logged-in user's scan params (no server-side validation — user's own settings)
     this.app.put('/api/v1/user/scan-params', (req, res) => {
-      if (!req.user) return res.status(401).json({ message: 'Not authenticated' });
+      if (!req.user) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
       userStore.upsert(req.user.id, { scanParams: req.body });
       res.json({ ok: true });
     });
@@ -324,7 +346,9 @@ module.exports = class ExpressConfigurer {
    * @returns {ExpressConfigurer}
    */
   basicAuth() {
-    if (config.oidc.enabled) return this;
+    if (config.oidc.enabled) {
+      return this;
+    }
     if (Object.keys(config.users).length > 0) {
       this.app.use(basicAuth({
         users: config.users,
@@ -477,7 +501,9 @@ module.exports = class ExpressConfigurer {
           if (ephemeral) {
             // One-time download token stored in the session
             const token = crypto.randomUUID();
-            if (!req.session.ephemeralTokens) req.session.ephemeralTokens = {};
+            if (!req.session.ephemeralTokens) {
+              req.session.ephemeralTokens = {};
+            }
             req.session.ephemeralTokens[token] = {
               path: result.file.fullname,
               filename: result.file.name,
@@ -523,8 +549,12 @@ module.exports = class ExpressConfigurer {
       }
 
       res.download(filePath, filename, (err) => {
-        try { fs.unlinkSync(filePath); } catch { /* already gone */ }
-        if (err) log.warn(`Ephemeral download error for ${filename}: ${err.message}`);
+        try {
+          fs.unlinkSync(filePath);
+        } catch { /* already gone */ }
+        if (err) {
+          log.warn(`Ephemeral download error for ${filename}: ${err.message}`);
+        }
       });
     });
     return this;
@@ -538,7 +568,9 @@ module.exports = class ExpressConfigurer {
    * @returns {ExpressConfigurer}
    */
   adminEndpoints(oidcAuth, userStore) {
-    if (!config.oidc.enabled) return this;
+    if (!config.oidc.enabled) {
+      return this;
+    }
 
     const adminGuard = (req, res, next) => {
       if (!req.user || !oidcAuth.isAdmin(req.user)) {
@@ -565,7 +597,9 @@ module.exports = class ExpressConfigurer {
 
     this.app.delete('/api/v1/admin/users/:id', adminGuard, (req, res) => {
       const deleted = userStore.delete(req.params.id);
-      if (!deleted) return res.status(404).json({ message: 'User not found' });
+      if (!deleted) {
+        return res.status(404).json({ message: 'User not found' });
+      }
       res.json({ ok: true });
     });
 
