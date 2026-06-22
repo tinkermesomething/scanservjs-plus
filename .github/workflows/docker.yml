@@ -2,11 +2,15 @@ name: docker
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 0 * * *' # runs daily at 00:00
 
-  release:
-    types: [published]
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*.*.*'
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
 
 env:
   BUILD_TARGET: scanservjs-core
@@ -46,33 +50,16 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/scanservjs-plus
             ghcr.io/${{ github.repository_owner }}/scanservjs-plus
           tags: |
-            type=schedule,pattern=staging
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
             type=semver,pattern={{raw}}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
 
-      - name: New commit count
-        run: echo "NEW_COMMIT_COUNT=$(git log --oneline --since '24 hours ago' | wc -l)" >> $GITHUB_ENV
-
-      - name: Push nightly staging
-        if: github.ref == 'refs/heads/master' && env.NEW_COMMIT_COUNT > 0
+      - name: Build and push
         uses: docker/build-push-action@v5
         with:
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          annotations: ${{ steps.meta.outputs.annotations }}
-          target: ${{ env.BUILD_TARGET }}
-          platforms: ${{ env.BUILD_PLATFORMS }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Push release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: docker/build-push-action@v5
-        with:
-          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}

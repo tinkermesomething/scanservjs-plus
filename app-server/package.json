@@ -15,7 +15,7 @@
   "main": "server/server.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sbs20/scanservjs"
+    "url": "https://github.com/tinkermesomething/scanservjs-plus"
   },
   "devDependencies": {
     "eslint": "8.53.0",

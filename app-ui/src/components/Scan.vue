@@ -322,7 +322,7 @@ export default {
       },
       deep: true
     },
-    'auth.loading': function(loading) {
+    'auth.loading'(loading) {
       if (!loading && !auth.isGuest) {
         this.loadServerScanParams();
       }
