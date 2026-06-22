@@ -48,7 +48,7 @@ class OidcAuth {
   }
 
   isAdmin(user) {
-    if (!user || !this.config.oidc.adminGroup) return false;
+    if (!user || !this.config.oidc.adminGroup) { return false; }
     const groups = user.groups || [];
     return groups.includes(this.config.oidc.adminGroup);
   }

@@ -57,7 +57,9 @@ describe('OidcAuth.middleware', () => {
     const user = { id: 'sub1', name: 'Alice' };
     const req = { session: { user } };
     let called = false;
-    mw(req, {}, () => { called = true; });
+    mw(req, {}, () => {
+      called = true;
+    });
     assert.strictEqual(req.user, user);
     assert.strictEqual(called, true);
   });

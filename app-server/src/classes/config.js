@@ -300,19 +300,19 @@ module.exports = class Config {
     if (process.env.OIDC_ENABLED !== undefined) {
       this.oidc.enabled = process.env.OIDC_ENABLED === 'true';
     }
-    if (process.env.OIDC_ISSUER) this.oidc.issuer = process.env.OIDC_ISSUER;
-    if (process.env.OIDC_CLIENT_ID) this.oidc.clientId = process.env.OIDC_CLIENT_ID;
-    if (process.env.OIDC_CLIENT_SECRET) this.oidc.clientSecret = process.env.OIDC_CLIENT_SECRET;
-    if (process.env.OIDC_REDIRECT_URI) this.oidc.redirectUri = process.env.OIDC_REDIRECT_URI;
-    if (process.env.OIDC_SCOPE) this.oidc.scope = process.env.OIDC_SCOPE;
-    if (process.env.OIDC_GROUPS_CLAIM) this.oidc.groupsClaim = process.env.OIDC_GROUPS_CLAIM;
-    if (process.env.ADMIN_GROUP) this.oidc.adminGroup = process.env.ADMIN_GROUP;
+    if (process.env.OIDC_ISSUER) { this.oidc.issuer = process.env.OIDC_ISSUER; }
+    if (process.env.OIDC_CLIENT_ID) { this.oidc.clientId = process.env.OIDC_CLIENT_ID; }
+    if (process.env.OIDC_CLIENT_SECRET) { this.oidc.clientSecret = process.env.OIDC_CLIENT_SECRET; }
+    if (process.env.OIDC_REDIRECT_URI) { this.oidc.redirectUri = process.env.OIDC_REDIRECT_URI; }
+    if (process.env.OIDC_SCOPE) { this.oidc.scope = process.env.OIDC_SCOPE; }
+    if (process.env.OIDC_GROUPS_CLAIM) { this.oidc.groupsClaim = process.env.OIDC_GROUPS_CLAIM; }
+    if (process.env.ADMIN_GROUP) { this.oidc.adminGroup = process.env.ADMIN_GROUP; }
     if (process.env.OIDC_POST_LOGOUT_REDIRECT_URI) {
       this.oidc.postLogoutRedirectUri = process.env.OIDC_POST_LOGOUT_REDIRECT_URI;
     }
 
     // Session configuration
-    if (process.env.SESSION_SECRET) this.session.secret = process.env.SESSION_SECRET;
+    if (process.env.SESSION_SECRET) { this.session.secret = process.env.SESSION_SECRET; }
     if (process.env.SESSION_SECURE !== undefined) {
       this.session.secure = process.env.SESSION_SECURE !== 'false';
     }
