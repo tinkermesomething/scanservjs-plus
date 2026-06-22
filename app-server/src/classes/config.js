@@ -56,6 +56,7 @@ module.exports = class Config {
       tempDirectory: path.join(BASE_PATH, 'data/temp'),
       usersDirectory: path.join(BASE_PATH, 'data/users'),
       sessionsDirectory: path.join(BASE_PATH, 'data/sessions'),
+      ephemeralDirectory: path.join(BASE_PATH, 'data/ephemeral'),
 
       users: {},
 

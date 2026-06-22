@@ -13,11 +13,12 @@ const scanimageCommand = application.scanimageCommand();
 module.exports = new class Api {
 
   /**
+   * @param {string} [directory]
    * @returns {Promise.<FileInfo[]>}
    */
-  async fileList() {
+  async fileList(directory) {
     log.trace('fileList()');
-    const dir = FileInfo.create(config.outputDirectory);
+    const dir = FileInfo.create(directory || config.outputDirectory);
     let files = await dir.list();
     files = files
       .filter(file => !file.isDirectory)
@@ -28,26 +29,27 @@ module.exports = new class Api {
 
   /**
    * @param {string} name
+   * @param {string} [directory]
    * @returns {FileInfo}
    */
-  fileDelete(name) {
+  fileDelete(name, directory) {
     log.trace('fileDelete()');
     const thumbnail = FileInfo.unsafe(config.thumbnailDirectory, name);
     if (thumbnail.exists()) {
       thumbnail.delete();
     }
-    const file = FileInfo.unsafe(config.outputDirectory, name);
+    const file = FileInfo.unsafe(directory || config.outputDirectory, name);
     return file.delete();
   }
 
   /**
-   * Runs an action on a file
    * @param {string} actionName
    * @param {string} fileName
+   * @param {string} [directory]
    * @returns {Promise.<any>}
    */
-  async fileAction(actionName, fileName) {
-    const fileInfo = FileInfo.unsafe(config.outputDirectory, fileName);
+  async fileAction(actionName, fileName, directory) {
+    const fileInfo = FileInfo.unsafe(directory || config.outputDirectory, fileName);
     if (!fileInfo.exists()) {
       throw new Error(`File '${fileName}' does not exist`);
     }
@@ -145,10 +147,11 @@ module.exports = new class Api {
 
   /**
    * @param {ScanRequest} req
+   * @param {{ outputDirectory?: string }} scanContext
    * @returns {ScanResponse}
    */
-  async scan(req) {
-    return await ScanController.run(req);
+  async scan(req, scanContext = {}) {
+    return await ScanController.run(req, scanContext);
   }
 
   /**

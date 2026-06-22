@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const express = require('express');
 const cors = require('cors');
 const basicAuth = require('express-basic-auth');
@@ -57,6 +58,18 @@ function formatForLog(req) {
 }
 
 /**
+ * Returns the output directory for the requesting user.
+ * Falls back to global outputDirectory when OIDC is disabled (unchanged behaviour).
+ * Returns null for guests or users with no directory assigned when OIDC is on.
+ * @param {import('express').Request} req
+ * @returns {string|null}
+ */
+function resolveDir(req) {
+  if (!config.oidc.enabled) return config.outputDirectory;
+  return (req.userRecord && req.userRecord.outputDirectory) || null;
+}
+
+/**
  * Definition of all endpoints
  */
 const EndpointSpecs = [
@@ -76,15 +89,21 @@ const EndpointSpecs = [
   {
     method: 'get',
     path: '/api/v1/files',
-    callback: async (req, res) => res.send(await api.fileList())
+    callback: async (req, res) => {
+      const dir = resolveDir(req);
+      if (!dir) return res.send([]);
+      res.send(await api.fileList(dir));
+    }
   },
   {
     method: 'post',
     path: /\/api\/v1\/files\/([^/]+)\/actions\/([^/]+)/,
     callback: async (req, res) => {
+      const dir = resolveDir(req);
+      if (!dir) return res.status(403).json({ message: 'No output directory assigned' });
       const fileName = req.params[0];
       const actionName = req.params[1];
-      await api.fileAction(actionName, fileName);
+      await api.fileAction(actionName, fileName, dir);
       res.send('200');
     }
   },
@@ -102,23 +121,31 @@ const EndpointSpecs = [
     method: 'get',
     path: /\/api\/v1\/files\/([^/]+)/,
     callback: async (req, res) => {
+      const dir = resolveDir(req);
+      if (!dir) return res.status(403).json({ message: 'No output directory assigned' });
       const name = req.params[0];
-      const file = FileInfo.unsafe(config.outputDirectory, name);
+      const file = FileInfo.unsafe(dir, name);
       res.download(file.fullname);
     }
   },
   {
     method: 'delete',
     path: '/api/v1/files/*',
-    callback: async (req, res) => res.send(api.fileDelete(req.params[0]))
+    callback: async (req, res) => {
+      const dir = resolveDir(req);
+      if (!dir) return res.status(403).json({ message: 'No output directory assigned' });
+      res.send(api.fileDelete(req.params[0], dir));
+    }
   },
   {
     method: 'put',
     path: '/api/v1/files/*',
     callback: async (req, res) => {
+      const dir = resolveDir(req);
+      if (!dir) return res.status(403).json({ message: 'No output directory assigned' });
       const name = req.params[0];
       const newName = req.body.newName;
-      await FileInfo.unsafe(config.outputDirectory, name).rename(newName);
+      await FileInfo.unsafe(dir, name).rename(newName);
       const thumbnail = FileInfo.unsafe(config.thumbnailDirectory, name);
       if (thumbnail.exists()) {
         thumbnail.rename(newName);
@@ -147,11 +174,6 @@ const EndpointSpecs = [
     callback: async (req, res) => res.send(await api.createPreview(req.body))
   },
   {
-    method: 'post',
-    path: '/api/v1/scan',
-    callback: async (req, res) => res.send(await api.scan(req.body))
-  },
-  {
     method: 'get',
     path: '/api/v1/system',
     callback: async (req, res) => res.send(await api.readSystem())
@@ -171,6 +193,8 @@ module.exports = class ExpressConfigurer {
       fs.mkdirSync(config.outputDirectory, { recursive: true });
       fs.mkdirSync(config.thumbnailDirectory, { recursive: true });
       fs.mkdirSync(config.tempDirectory, { recursive: true });
+      fs.mkdirSync(config.ephemeralDirectory, { recursive: true });
+      this._cleanupEphemeral();
     } catch (exception) {
       log.warn(`Error ensuring output and temp directories exist: ${exception}`);
       log.warn(`Currently running node version ${process.version}.`);
@@ -367,6 +391,128 @@ module.exports = class ExpressConfigurer {
       swaggerUi.serveFiles(swaggerSpec, swaggerUiOptions),
       swaggerUi.setup(swaggerSpec, swaggerUiOptions));
 
+    return this;
+  }
+
+  /**
+   * Deletes ephemeral files older than the session max age on startup.
+   * Handles the case where a session expired before the download happened.
+   */
+  _cleanupEphemeral() {
+    const cutoff = Date.now() - config.session.maxAge;
+    try {
+      fs.readdirSync(config.ephemeralDirectory).forEach(f => {
+        const fp = path.join(config.ephemeralDirectory, f);
+        try {
+          if (fs.statSync(fp).mtimeMs < cutoff) {
+            fs.unlinkSync(fp);
+            log.info(`Removed stale ephemeral file: ${f}`);
+          }
+        } catch { /* already gone */ }
+      });
+    } catch { /* directory may not exist yet on first boot */ }
+  }
+
+  /**
+   * Middleware that loads the user's stored record and attaches it to req.userRecord.
+   * Must run after oidcMiddleware so req.user is already populated.
+   * @param {import('./classes/user-store')} userStore
+   * @returns {ExpressConfigurer}
+   */
+  userRecordMiddleware(userStore) {
+    this.app.use((req, _res, next) => {
+      req.userRecord = req.user ? (userStore.get(req.user.id) || {}) : null;
+      next();
+    });
+    return this;
+  }
+
+  /**
+   * Registers POST /api/v1/scan with concurrency lock and ephemeral download flow.
+   * @param {import('./classes/scan-lock')} scanLock
+   * @returns {ExpressConfigurer}
+   */
+  scanEndpoint(scanLock) {
+    this.app.post('/api/v1/scan', async (req, res) => {
+      log.info(formatForLog(req));
+      const sessionId = req.session.id;
+      const isFirstPass = req.body.index === 1;
+
+      if (isFirstPass) {
+        try {
+          scanLock.acquire(sessionId);
+        } catch (e) {
+          return sendError(res, 409, e);
+        }
+      }
+
+      // Determine whether this scan goes to a persistent directory or is ephemeral
+      const outputDirectory = resolveDir(req);
+      const ephemeral = !outputDirectory;
+      const scanContext = {
+        outputDirectory: ephemeral ? config.ephemeralDirectory : outputDirectory,
+      };
+
+      try {
+        const result = await api.scan(req.body, scanContext);
+        const isComplete = result && result.file;
+
+        if (isComplete) {
+          scanLock.release(sessionId);
+
+          if (ephemeral) {
+            // One-time download token stored in the session
+            const token = crypto.randomUUID();
+            if (!req.session.ephemeralTokens) req.session.ephemeralTokens = {};
+            req.session.ephemeralTokens[token] = {
+              path: result.file.fullname,
+              filename: result.file.name,
+            };
+            return res.send({ ephemeral: true, token, filename: result.file.name });
+          }
+
+          return res.send({ file: { name: result.file.name } });
+        }
+
+        // Intermediate batch pass — pass through index/image for the BatchDialog
+        res.send(result);
+      } catch (err) {
+        scanLock.release(sessionId);
+        sendError(res, 500, err);
+      }
+    });
+    return this;
+  }
+
+  /**
+   * Registers GET /api/v1/ephemeral/:token — one-time authenticated file download.
+   * File is deleted from disk immediately after being served.
+   * @returns {ExpressConfigurer}
+   */
+  ephemeralEndpoint() {
+    this.app.get('/api/v1/ephemeral/:token', (req, res) => {
+      const { token } = req.params;
+      const tokens = (req.session && req.session.ephemeralTokens) || {};
+      const entry = tokens[token];
+
+      if (!entry) {
+        return sendError(res, 404, 'Download token not found or already used');
+      }
+
+      // Consume the token immediately — one-time use
+      delete req.session.ephemeralTokens[token];
+
+      const { path: filePath, filename } = entry;
+
+      if (!fs.existsSync(filePath)) {
+        return sendError(res, 404, 'File not found');
+      }
+
+      res.download(filePath, filename, (err) => {
+        try { fs.unlinkSync(filePath); } catch { /* already gone */ }
+        if (err) log.warn(`Ephemeral download error for ${filename}: ${err.message}`);
+      });
+    });
     return this;
   }
 

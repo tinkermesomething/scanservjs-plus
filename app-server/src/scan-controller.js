@@ -1,3 +1,4 @@
+const fs = require('fs');
 const log = require('loglevel').getLogger('ScanController');
 const Constants = require('./constants');
 const Collator = require('./classes/collator');
@@ -13,13 +14,17 @@ const config = application.config();
 const scanimageCommand = application.scanimageCommand();
 
 class ScanController {
-  constructor() {
+  /**
+   * @param {{ outputDirectory?: string }} scanContext
+   */
+  constructor(scanContext = {}) {
     /** @type {Context} */
     this.context = null;
 
     /** @type {ScanRequest} */
     this.request = null;
 
+    this.scanContext = scanContext;
     this.dir = FileInfo.create(config.tempDirectory);
   }
 
@@ -103,7 +108,9 @@ class ScanController {
         .deflate(filenames.map(f => `${config.tempDirectory}/${f}`));
     }
 
-    const destination = `${config.outputDirectory}/${config.filename()}.${extension}`;
+    const outDir = this.scanContext.outputDirectory || config.outputDirectory;
+    fs.mkdirSync(outDir, { recursive: true });
+    const destination = `${outDir}/${config.filename()}.${extension}`;
     await FileInfo
       .create(`${config.tempDirectory}/${filename}`)
       .move(destination);
@@ -196,10 +203,11 @@ class ScanController {
 module.exports = {
   /**
    * @param {ScanRequest} req
+   * @param {{ outputDirectory?: string }} scanContext
    * @returns {Promise.<ScanResponse>}
    */
-  async run(req) {
-    const scan = new ScanController();
+  async run(req, scanContext = {}) {
+    const scan = new ScanController(scanContext);
     return await scan.execute(req);
   }
 };

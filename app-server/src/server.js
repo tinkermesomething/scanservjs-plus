@@ -4,6 +4,7 @@ const application = require('./application');
 const config = application.config();
 const OidcAuth = require('./classes/oidc-auth');
 const UserStore = require('./classes/user-store');
+const scanLock = require('./classes/scan-lock');
 const ExpressConfigurer = require('./express-configurer');
 
 async function start() {
@@ -18,10 +19,13 @@ async function start() {
     .encoding()
     .session()
     .oidcMiddleware(oidcAuth)
+    .userRecordMiddleware(userStore)
     .statics()
     .authRoutes(oidcAuth, userStore)
     .basicAuth()
     .swagger()
+    .scanEndpoint(scanLock)
+    .ephemeralEndpoint()
     .endpoints()
     .userEndpoints(oidcAuth, userStore);
 
