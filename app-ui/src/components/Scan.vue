@@ -65,6 +65,7 @@
 
         <div class="d-flex flex-row-reverse flex-wrap">
           <v-btn color="blue" class="ml-1 mb-1" @click="scan(1)">{{ $t('scan.btn-scan') }} <v-icon class="ml-2" :icon="mdiCamera" /></v-btn>
+          <v-btn color="teal" class="ml-1 mb-1" @click="quickScan">{{ $t('scan.btn-quick-scan') }} <v-icon class="ml-2" :icon="mdiFlash" /></v-btn>
           <v-btn v-if="geometry" color="green" class="ml-1 mb-1" @click="createPreview">{{ $t('scan.btn-preview') }} <v-icon class="ml-2" :icon="mdiMagnify" /></v-btn>
           <v-btn color="amber" class="ml-1 mb-1" @click="deletePreview">{{ $t('scan.btn-clear') }} <v-icon class="ml-2" :icon="mdiDelete" /></v-btn>
         </div>
@@ -132,7 +133,7 @@
 </template>
 
 <script>
-import { mdiCamera, mdiDelete, mdiMagnify, mdiRefresh } from '@mdi/js';
+import { mdiCamera, mdiDelete, mdiFlash, mdiMagnify, mdiRefresh } from '@mdi/js';
 import { Cropper } from 'vue-advanced-cropper';
 import { useI18n } from 'vue-i18n';
 import BatchDialog from './BatchDialog.vue';
@@ -171,6 +172,7 @@ export default {
     return {
       mdiCamera,
       mdiDelete,
+      mdiFlash,
       mdiMagnify,
       mdiRefresh,
       te
@@ -594,6 +596,27 @@ export default {
           } else {
             this.readPreview();
           }
+        }
+      });
+    },
+
+    quickScan() {
+      const data = Common.clone(this.request);
+      data.batch = 'none';
+      data.index = 1;
+      this._fetch('api/v1/scan', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      }).then((response) => {
+        if (!response) return;
+        if (storage.settings.showFilesAfterScan) {
+          this.$router.push('/files');
+        } else {
+          this.readPreview();
         }
       });
     },
