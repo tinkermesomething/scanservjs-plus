@@ -33,7 +33,9 @@ class UserStore {
   // Merge updates into existing record; creates if absent
   upsert(userId, updates) {
     const existing = this.get(userId) || {};
-    this.save(userId, Object.assign(existing, updates));
+    const merged = Object.assign(existing, updates);
+    this.save(userId, merged);
+    return merged;
   }
 
   list() {
