@@ -383,6 +383,7 @@ module.exports = class ExpressConfigurer {
         }
       });
     });
+    return this;
   }
 
   /**
