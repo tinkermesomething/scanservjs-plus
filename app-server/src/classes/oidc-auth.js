@@ -82,7 +82,9 @@ class OidcAuth {
       });
 
       req.session.save((err) => {
-        if (err) { log.warn('Session save failed before OIDC redirect:', err.message); }
+        if (err) {
+          log.warn('Session save failed before OIDC redirect:', err.message);
+        }
         res.redirect(url);
       });
     };
@@ -154,7 +156,9 @@ class OidcAuth {
 
       log.info(`User logged in: ${user.email || user.id}`);
       req.session.save((err) => {
-        if (err) { log.warn('Session save failed after OIDC callback:', err.message); }
+        if (err) {
+          log.warn('Session save failed after OIDC callback:', err.message);
+        }
         res.redirect(returnTo);
       });
     };
