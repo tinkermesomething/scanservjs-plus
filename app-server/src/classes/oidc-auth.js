@@ -81,7 +81,10 @@ class OidcAuth {
         code_challenge_method: 'S256',
       });
 
-      res.redirect(url);
+      req.session.save((err) => {
+        if (err) { log.warn('Session save failed before OIDC redirect:', err.message); }
+        res.redirect(url);
+      });
     };
   }
 
@@ -150,7 +153,10 @@ class OidcAuth {
       delete req.session.returnTo;
 
       log.info(`User logged in: ${user.email || user.id}`);
-      res.redirect(returnTo);
+      req.session.save((err) => {
+        if (err) { log.warn('Session save failed after OIDC callback:', err.message); }
+        res.redirect(returnTo);
+      });
     };
   }
 

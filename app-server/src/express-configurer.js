@@ -509,7 +509,10 @@ module.exports = class ExpressConfigurer {
               path: result.file.fullname,
               filename: result.file.name,
             };
-            return res.send({ ephemeral: true, token, filename: result.file.name });
+            return req.session.save((err) => {
+              if (err) { log.warn('Session save failed before ephemeral response:', err.message); }
+              res.send({ ephemeral: true, token, filename: result.file.name });
+            });
           }
 
           return res.send({ file: { name: result.file.name } });
